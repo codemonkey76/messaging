@@ -1,0 +1,8 @@
+[workspace]
+members = [
+	"api",
+	"queue",
+	"workers",
+	"clicksend"
+, "cli"]
+resolver = "2"
