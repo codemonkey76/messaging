@@ -4,5 +4,5 @@ members = [
 	"queue",
 	"workers",
 	"clicksend"
-, "cli"]
+, "cli", "shared"]
 resolver = "2"
