@@ -1,14 +1,12 @@
-use crate::{clicksend::ClickSendApi, AppResult, ClickSendClient};
+use crate::{clicksend::ClickSendApi, AppResult};
 
-pub struct MessageService {
-    client: ClickSendClient,
+pub struct MessageService<T: ClickSendApi> {
+    client: T,
 }
 
-impl MessageService {
-    pub fn new(api_key: &str, username: &str, base_url: &str, version: &str) -> AppResult<Self> {
-        Ok(Self {
-            client: ClickSendClient::new(api_key, username, base_url, version)?,
-        })
+impl<T: ClickSendApi> MessageService<T> {
+    pub fn new(client: T) -> Self {
+        Self { client }
     }
 
     pub async fn send_single_sms(

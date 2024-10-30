@@ -5,10 +5,10 @@ use crate::{
 
 use super::ClickSendApi;
 
-pub struct MockClickSendApi;
+pub struct MockClickSendClient;
 
 #[async_trait::async_trait]
-impl ClickSendApi for MockClickSendApi {
+impl ClickSendApi for MockClickSendClient {
     async fn validate_sender(&self, sender: &str) -> AppResult<()> {
         validate_sender_logic(
             sender,

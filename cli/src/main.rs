@@ -1,10 +1,12 @@
 use clap::Parser;
+use colored::Colorize;
 use config::{Config, File};
+use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 use tokio;
 
-use clicksend::{clicksend::ClickSendApi, AppError, AppResult, ClickSendClient};
+use clicksend::{clicksend::ClickSendApi, AppResult, ClickSendClient};
 
 #[derive(Parser, Debug)]
 #[command(name = "Message Sender")]
@@ -66,9 +68,25 @@ async fn main() -> AppResult<()> {
         &config.version,
     )?;
 
+    let spinner = ProgressBar::new_spinner();
+    spinner.set_message("Sending SMS...");
+    spinner.enable_steady_tick(Duration::from_millis(100));
+    spinner.set_style(
+        ProgressStyle::default_spinner()
+            .template("{spinner:.green} {msg}")
+            .expect("Expect to be able to set a default template"),
+    );
+
     client
         .send_single_sms(&args.recipient, &args.sender, &args.message)
         .await?;
+
+    let success_message = format!(
+        "{}   SMS sent successfully!",
+        "\u{2713}".to_string().green()
+    );
+
+    spinner.finish_with_message(success_message);
 
     Ok(())
 }

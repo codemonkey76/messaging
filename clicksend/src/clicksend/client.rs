@@ -3,6 +3,7 @@ use reqwest::{
     header::{self, HeaderMap, HeaderValue},
     Client,
 };
+use serde::Deserialize;
 
 use super::ClickSendApi;
 use crate::{
@@ -13,10 +14,33 @@ use serde_json;
 
 pub struct ClickSendClient {
     client: Client,
-    api_key: String,
-    username: String,
     base_url: String,
     version: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OwnNumber {
+    phone_number: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OwnNumbersResponse {
+    own_numbers: Vec<OwnNumber>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DedicatedNumber {
+    dedicated_number: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct DedicatedNumbersData {
+    data: Vec<DedicatedNumber>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DedicatedNumbersResponse {
+    data: DedicatedNumbersData,
 }
 
 impl ClickSendClient {
@@ -52,8 +76,6 @@ impl ClickSendClient {
 
         Ok(Self {
             client,
-            api_key: api_key.to_string(),
-            username: username.to_string(),
             base_url: base_url.to_string(),
             version: version.to_string(),
         })
@@ -62,7 +84,6 @@ impl ClickSendClient {
     fn construct_url(&self, endpoint: &str) -> String {
         let url = format!("{}/{}/{}", self.base_url, self.version, endpoint);
 
-        println!("Constructed URL: {}", &url);
         url
     }
 }
@@ -125,14 +146,29 @@ impl ClickSendApi for ClickSendClient {
 
     async fn fetch_verified_numbers(&self) -> AppResult<Vec<String>> {
         let url = self.construct_url("own-numbers");
-        dbg!(&url);
         let response = self.client.get(&url).send().await;
 
         match response {
             Ok(res) if res.status().is_success() => {
-                let own_numbers: Vec<String> = res.json().await.unwrap_or_default();
-                println!("Own Numbers: {:?}", &own_numbers);
-                Ok(own_numbers)
+                let body_text = res
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Failed to get response text".to_string());
+
+                let own_numbers_response: OwnNumbersResponse = serde_json::from_str(&body_text)
+                    .unwrap_or_else(|err| {
+                        println!("Failed to deserialize JSON: {}", err);
+                        OwnNumbersResponse {
+                            own_numbers: Vec::new(),
+                        }
+                    });
+
+                let phone_numbers: Vec<String> = own_numbers_response
+                    .own_numbers
+                    .into_iter()
+                    .map(|own_number| own_number.phone_number)
+                    .collect();
+                Ok(phone_numbers)
             }
             Ok(res) => {
                 let status = res.status();
@@ -151,14 +187,30 @@ impl ClickSendApi for ClickSendClient {
 
     async fn fetch_dedicated_numbers(&self) -> AppResult<Vec<String>> {
         let url = self.construct_url("numbers");
-        dbg!(&url);
         let response = self.client.get(&url).send().await;
 
         match response {
             Ok(res) if res.status().is_success() => {
-                let dedicated_numbers: Vec<String> = res.json().await.unwrap_or_default();
-                println!("Dedicated numbers: {:?}", &dedicated_numbers);
-                Ok(dedicated_numbers)
+                let body_text = res
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Failed to get response text".to_string());
+
+                let dedicated_numbers: DedicatedNumbersResponse = serde_json::from_str(&body_text)
+                    .unwrap_or_else(|err| {
+                        println!("Failed to deserialize JSON: {}", err);
+                        DedicatedNumbersResponse {
+                            data: DedicatedNumbersData { data: Vec::new() },
+                        }
+                    });
+
+                let phone_numbers: Vec<String> = dedicated_numbers
+                    .data
+                    .data
+                    .into_iter()
+                    .map(|dedicated_number| dedicated_number.dedicated_number)
+                    .collect();
+                Ok(phone_numbers)
             }
             Ok(res) => {
                 let status = res.status();

@@ -1,10 +1,13 @@
-use clicksend::clicksend::mock;
+use clicksend::{api::MessageService, clicksend::mock::MockClickSendClient};
 
 #[tokio::test]
-async fn test_send_message() {
-    let mock_api = mock::MockClickSendApi;
+async fn test_send_single_message() {
+    let client = MockClickSendClient;
+    let service = MessageService::new(client);
 
-    let result = clicksend::send_single_sms("+123456789", "+1234567890", "Test message").await;
+    let result = service
+        .send_single_sms("+123456789", "+1234567890", "Test message")
+        .await;
 
     if result.is_err() {
         println!("Test failed with error: {}", result.as_ref().unwrap_err());

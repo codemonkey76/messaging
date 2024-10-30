@@ -10,3 +10,5 @@ serde = { version = "1.0.214", features = ["derive"] }
 tokio = { version = "1.41.0", features = ["full"] }
 clicksend = { path = "../clicksend" }
 dirs = "5.0.1"
+indicatif = "0.17.8"
+colored = "2.1.0"
